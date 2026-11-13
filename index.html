@@ -1200,6 +1200,10 @@ body{background:#e8e9df!important;color:var(--ink)!important}
       <button class="btn" id="rsvpSubmit" type="submit" hidden>ENVIAR CONFIRMAÇÃO PELO WHATSAPP</button>
     </form>
     <p id="rsvpSuccess" class="rsvp-success-message" role="status" aria-live="polite" hidden>Obrigado! Sua confirmação foi enviada.</p>
+    <p id="rsvpWhatsappFallback" class="rsvp-whatsapp-fallback" hidden>
+      Se o WhatsApp não abriu automaticamente,
+      <a id="rsvpWhatsappLink" href="#" target="_blank" rel="noopener">toque aqui para enviar sua confirmação.</a>
+    </p>
     <p class="footer">A CONFIRMAÇÃO SERÁ ENVIADA DIRETAMENTE AOS NOIVOS</p>
     <button class="back" onclick="showScreen('invitation')">← Voltar ao convite</button>
   </section>
@@ -1259,6 +1263,8 @@ body{background:#e8e9df!important;color:var(--ink)!important}
     const companionsControl = document.getElementById('companionsControl');
     const rsvpError = document.getElementById('rsvpError');
     const rsvpSuccess = document.getElementById('rsvpSuccess');
+    const rsvpWhatsappFallback = document.getElementById('rsvpWhatsappFallback');
+    const rsvpWhatsappLink = document.getElementById('rsvpWhatsappLink');
     const rsvpSubmit = document.getElementById('rsvpSubmit');
     let companions = 0;
 
@@ -1378,11 +1384,10 @@ body{background:#e8e9df!important;color:var(--ink)!important}
       rsvpSubmit.disabled = true;
       rsvpSubmit.textContent = 'ENVIANDO...';
 
-      // Abre uma aba em branco durante o clique para evitar bloqueio de pop-up.
-      const whatsappWindow = window.open('about:blank', '_blank');
-
+      // Abre o WhatsApp imediatamente durante o clique do usuário.
+      // Isso evita que o navegador bloqueie a abertura após o retorno assíncrono do Sheets.
       const whatsappLines = [
-        'Olá, Sarah e Fellipe! ❤️',
+        'Olá, Sarah e Fellipe!',
         '',
         'Segue minha confirmação de presença:',
         `Nome: ${name}`,
@@ -1391,21 +1396,22 @@ body{background:#e8e9df!important;color:var(--ink)!important}
           ? [`Acompanhantes (${companionNames.length}): ${companionNames.length ? companionNames.join(', ') : 'Nenhum'}`]
           : [])
       ];
-      const whatsappUrl = 'https://wa.me/5541988571657?text=' +
-        encodeURIComponent(whatsappLines.join('\n'));
+      const whatsappUrl = 'https://api.whatsapp.com/send?phone=5541988571657&text=' +
+        encodeURIComponent(whatsappLines.join('\\n'));
+
+      // A abertura ocorre de forma síncrona, ainda dentro do gesto do usuário.
+      const whatsappWindow = window.open(whatsappUrl, '_blank');
+
+      // Deixa também um link manual disponível caso o navegador bloqueie a nova aba.
+      rsvpWhatsappLink.href = whatsappUrl;
+      rsvpWhatsappFallback.hidden = !!whatsappWindow;
 
       fetch(endpoint, {
         method: 'POST',
         mode: 'no-cors',
         body: payload
       }).then(() => {
-        // Mantém o registro na planilha e abre a mensagem para os noivos.
-        if (whatsappWindow) {
-          whatsappWindow.location.href = whatsappUrl;
-        } else {
-          window.open(whatsappUrl, '_blank');
-        }
-
+        // A abertura do WhatsApp já foi iniciada no clique; aqui finalizamos a confirmação na página.
         rsvpForm.reset();
         rsvpForm.hidden = true;
         rsvpSuccess.hidden = false;
@@ -1413,7 +1419,6 @@ body{background:#e8e9df!important;color:var(--ink)!important}
         companionFields.innerHTML = '';
         companionCount.textContent = '0';
       }).catch(() => {
-        if (whatsappWindow) whatsappWindow.close();
         rsvpError.classList.remove('rsvp-success');
         rsvpError.classList.add('rsvp-failure');
         rsvpError.textContent = 'Não foi possível enviar agora. Verifique sua conexão e tente novamente.';
@@ -1628,5 +1633,47 @@ body{background:#e8e9df!important;color:var(--ink)!important}
 }
 </style>
 
-</body>
+
+
+<style id="light-mode-and-whatsapp-compatibility">
+/* O convite foi desenhado para tema claro: evita adaptação automática de cores do navegador. */
+:root, html, body {
+  color-scheme: only light !important;
+  background-color: #f7f6ee !important;
+}
+html {
+  background: #e8e9df !important;
+}
+body {
+  background: #e8e9df !important;
+  color: #5d6442 !important;
+}
+.site {
+  background-color: #f7f6ee !important;
+  color: #5d6442 !important;
+}
+.screen, .envelope-screen, #invitation, #details, #rsvp {
+  color-scheme: only light !important;
+}
+.form, .form input, .form select {
+  color-scheme: only light !important;
+  background-color: #fffdf8 !important;
+  color: #4c4b3b !important;
+}
+.form input::placeholder { color: #898575 !important; }
+.rsvp-whatsapp-fallback {
+  max-width: 320px;
+  margin: 16px auto 0;
+  color: #737d55;
+  text-align: center;
+  font: 400 11px/1.8 Montserrat, sans-serif;
+}
+.rsvp-whatsapp-fallback[hidden] { display: none !important; }
+.rsvp-whatsapp-fallback a {
+  color: #596b43;
+  text-decoration: underline;
+  font-weight: 500;
+}
+</style>
+\n</body>
 </html>
