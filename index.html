@@ -1195,8 +1195,9 @@ body{background:#e8e9df!important;color:var(--ink)!important}
         <div id="companionFields" class="companion-fields"></div>
       </div>
       <p id="rsvpError" class="rsvp-error" role="alert" aria-live="polite"></p>
-      <button class="btn" id="rsvpSubmit" type="submit" hidden>Enviar confirmação</button>
+      <button class="btn" id="rsvpSubmit" type="submit" hidden>ENVIAR CONFIRMAÇÃO PELO WHATSAPP</button>
     </form>
+    <p id="rsvpSuccess" class="rsvp-success-message" role="status" aria-live="polite" hidden>Obrigado! Sua confirmação foi enviada.</p>
     <p class="footer">A CONFIRMAÇÃO SERÁ ENVIADA DIRETAMENTE AOS NOIVOS</p>
     <button class="back" onclick="showScreen('invitation')">← Voltar ao convite</button>
   </section>
@@ -1255,6 +1256,7 @@ body{background:#e8e9df!important;color:var(--ink)!important}
     const companionCount = document.getElementById('companionCount');
     const companionsControl = document.getElementById('companionsControl');
     const rsvpError = document.getElementById('rsvpError');
+    const rsvpSuccess = document.getElementById('rsvpSuccess');
     const rsvpSubmit = document.getElementById('rsvpSubmit');
     let companions = 0;
 
@@ -1372,30 +1374,50 @@ body{background:#e8e9df!important;color:var(--ink)!important}
       payload.set('source', 'Convite Sarah & Fellipe');
 
       rsvpSubmit.disabled = true;
-      rsvpSubmit.textContent = 'Enviando...';
+      rsvpSubmit.textContent = 'ENVIANDO...';
+
+      // Abre uma aba em branco durante o clique para evitar bloqueio de pop-up.
+      const whatsappWindow = window.open('about:blank', '_blank');
+
+      const whatsappLines = [
+        'Olá, Sarah e Fellipe! ❤️',
+        '',
+        'Segue minha confirmação de presença:',
+        `Nome: ${name}`,
+        `Resposta: ${answer}`,
+        ...(answer === 'Sim, confirmo minha presença!'
+          ? [`Acompanhantes (${companionNames.length}): ${companionNames.length ? companionNames.join(', ') : 'Nenhum'}`]
+          : [])
+      ];
+      const whatsappUrl = 'https://wa.me/5541988571657?text=' +
+        encodeURIComponent(whatsappLines.join('\n'));
 
       fetch(endpoint, {
         method: 'POST',
         mode: 'no-cors',
         body: payload
       }).then(() => {
-        rsvpError.classList.remove('rsvp-failure');
-        rsvpError.classList.add('rsvp-success');
-        rsvpError.textContent = 'Obrigado! Sua confirmação foi enviada.';
+        // Mantém o registro na planilha e abre a mensagem para os noivos.
+        if (whatsappWindow) {
+          whatsappWindow.location.href = whatsappUrl;
+        } else {
+          window.open(whatsappUrl, '_blank');
+        }
+
         rsvpForm.reset();
-        guestNameField.hidden = true;
-        companionsControl.hidden = true;
-        rsvpSubmit.hidden = true;
+        rsvpForm.hidden = true;
+        rsvpSuccess.hidden = false;
         companions = 0;
         companionFields.innerHTML = '';
         companionCount.textContent = '0';
       }).catch(() => {
+        if (whatsappWindow) whatsappWindow.close();
         rsvpError.classList.remove('rsvp-success');
         rsvpError.classList.add('rsvp-failure');
         rsvpError.textContent = 'Não foi possível enviar agora. Verifique sua conexão e tente novamente.';
       }).finally(() => {
         rsvpSubmit.disabled = false;
-        rsvpSubmit.textContent = 'Enviar confirmação';
+        rsvpSubmit.textContent = 'ENVIAR CONFIRMAÇÃO PELO WHATSAPP';
       });
     });
   }
@@ -1583,6 +1605,15 @@ body{background:#e8e9df!important;color:var(--ink)!important}
 
 
 <style id="google-sheets-status-style">
+#rsvp .rsvp-success-message {
+  margin: 22px auto 28px;
+  max-width: 680px;
+  color: var(--sage-dark);
+  text-align: center;
+  font: 400 clamp(22px, 4vw, 30px)/1.45 'Cormorant Garamond', serif;
+}
+#rsvp .rsvp-success-message[hidden],
+#rsvp #rsvpForm[hidden] { display: none !important; }
 #rsvp .rsvp-error.rsvp-success {
   color: var(--sage-dark);
 }
