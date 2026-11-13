@@ -1397,7 +1397,7 @@ body{background:#e8e9df!important;color:var(--ink)!important}
           : [])
       ];
       const whatsappUrl = 'https://api.whatsapp.com/send?phone=5541988571657&text=' +
-        encodeURIComponent(whatsappLines.join('\\n'));
+        encodeURIComponent(whatsappLines.join('\n'));
 
       // A abertura ocorre de forma síncrona, ainda dentro do gesto do usuário.
       const whatsappWindow = window.open(whatsappUrl, '_blank');
@@ -1673,6 +1673,18 @@ body {
   color: #596b43;
   text-decoration: underline;
   font-weight: 500;
+}
+
+/* Mantém a paleta clara também quando o sistema do aparelho está em modo escuro. */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: light !important; }
+  html, body { background-color: #e9e4d8 !important; color: #464536 !important; }
+  .site { background-color: #fbf8f0 !important; color: #464536 !important; }
+  .screen { background-color: #fbf8f0; }
+  .envelope-screen { background: radial-gradient(ellipse at 50% 16%, #fffefa 0, #f8f4e9 58%, #eee9dc 100%) !important; }
+  .paper-card { background-color: #fffdf8 !important; }
+  .form input, .form select, .form textarea { background-color: #fffdf8 !important; color: #464536 !important; border-color: #c9c7b8 !important; }
+  .form input::placeholder, .form textarea::placeholder { color: #898575 !important; }
 }
 </style>
 \n</body>
